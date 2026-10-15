@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mis Hábitos">
+  <meta name="theme-color" content="#020617">
+  <title>Command Center: Hábitos & Graduación 2027</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-3 sm:p-6 md:p-8 font-sans selection:bg-emerald-500 selection:text-slate-950">
+
+  <div class="max-w-7xl mx-auto space-y-6">
+    <!-- ENCABEZADO -->
+    <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/30" id="todayBadge">Hoy</span>
+          <span class="text-xs text-slate-400">Meta de Grado: Junio / Julio 2027</span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mt-1">
+          Command Center: Hábitos & Proyectos
+        </h1>
+      </div>
+
+      <!-- Contadores de Racha y Acciones -->
+      <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+        <div class="flex gap-2">
+          <div class="bg-slate-800/90 px-3.5 py-2 rounded-xl border border-slate-700 text-center">
+            <span class="text-[11px] text-slate-400 block uppercase tracking-wider">Semana Actual</span>
+            <span id="weeklyStreakCount" class="text-lg font-bold text-amber-400">0 días 🔥</span>
+          </div>
+          <div class="bg-slate-800/90 px-3.5 py-2 rounded-xl border border-amber-500/30 text-center">
+            <span class="text-[11px] text-amber-300/80 block uppercase tracking-wider">Racha Histórica</span>
+            <span id="historicalStreakCount" class="text-lg font-bold text-amber-300">0 días 🏆</span>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="openBackupModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-xl text-xs font-medium transition">
+            🔄 Respaldo / Sync
+          </button>
+          <button onclick="closeAndResetWeek()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 px-3 py-2 rounded-xl text-xs font-medium transition">
+            ✅ Cerrar Semana
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- FILA 1: GRÁFICO SEMANAL + PROYECTOS DE GRADUACIÓN -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Gráfico de Cumplimiento Semanal -->
+      <div class="lg:col-span-2 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg flex flex-col justify-between">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-200">Rendimiento Semanal de Hábitos</h2>
+            <p class="text-xs text-slate-400">Un día suma a tu racha cuando alcanzas al menos el 50% de tus metas</p>
+          </div>
+          <span id="weeklyAvg" class="text-xs sm:text-sm font-semibold text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-800">
+            Promedio: 0%
+          </span>
+        </div>
+        <div class="h-64 sm:h-72">
+          <canvas id="streakChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Proyectos Rumbo a Graduación (Tesis + Servicio Comunitario) -->
+      <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg space-y-5">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-200">Rumbo a Graduación (2027)</h2>
+          <p class="text-xs text-slate-400">Control de entregables y horas obligatorias</p>
+        </div>
+
+        <!-- Tarjeta 1: Tesis con Emily -->
+        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/60 space-y-3">
+          <div class="flex justify-between items-center text-sm">
+            <span class="font-semibold text-cyan-300">🎓 Tesis (con Emily)</span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="updateThesis(-5)" class="bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-xs">-5%</button>
+              <span id="thesisPctText" class="font-bold text-cyan-400 min-w-[36px] text-center">25%</span>
+              <button onclick="updateThesis(5)" class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-0.5 rounded text-xs font-semibold">+5%</button>
+            </div>
+          </div>
+          <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+            <div id="thesisBar" class="bg-cyan-400 h-full transition-all duration-300" style="width: 25%"></div>
+          </div>
+
+          <!-- Mini To-Do Tesis -->
+          <div class="pt-1 space-y-2">
+            <div class="flex gap-1.5">
+              <input id="thesisTodoInput" type="text" placeholder="Nueva tarea con Emily..." class="flex-1 bg-slate-900 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:border-cyan-400">
+              <button onclick="addProjectTodo('thesis')" class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold">+</button>
+            </div>
+            <ul id="thesisTodoList" class="space-y-1 max-h-28 overflow-y-auto pr-1 text-xs"></ul>
+          </div>
+        </div>
+
+        <!-- Tarjeta 2: Servicio Comunitario -->
+        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/60 space-y-3">
+          <div class="flex justify-between items-center text-sm">
+            <span class="font-semibold text-purple-300">🤝 Servicio Comunitario</span>
+            <span id="scHoursText" class="font-bold text-purple-300">0 / 120 hrs</span>
+          </div>
+          <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+            <div id="scBar" class="bg-purple-400 h-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <div class="flex justify-between items-center">
+            <span id="scStatus" class="text-[11px] text-amber-300">Pendiente por iniciar</span>
+            <div class="flex gap-1">
+              <button onclick="updateSC(-2)" class="bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-xs">-2h</button>
+              <button onclick="updateSC(2)" class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-0.5 rounded text-xs font-semibold">+2h</button>
+              <button onclick="updateSC(4)" class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-0.5 rounded text-xs font-semibold">+4h</button>
+            </div>
+          </div>
+
+          <!-- Mini To-Do Servicio Comunitario -->
+          <div class="pt-1 space-y-2">
+            <div class="flex gap-1.5">
+              <input id="scTodoInput" type="text" placeholder="Trámite o requisito..." class="flex-1 bg-slate-900 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:border-purple-400">
+              <button onclick="addProjectTodo('sc')" class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold">+</button>
+            </div>
+            <ul id="scTodoList" class="space-y-1 max-h-28 overflow-y-auto pr-1 text-xs"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILA 2: MATRIZ INTERACTIVA DE HÁBITOS SEMANALES -->
+    <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg overflow-x-auto">
+      <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-2">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-200">Matriz de Hábitos Semanales (Lunes a Domingo)</h2>
+          <p class="text-xs text-slate-400">La columna del día de hoy se resalta automáticamente en verde.</p>
+        </div>
+      </div>
+      <table class="w-full text-left border-collapse min-w-[680px]">
+        <thead>
+          <tr id="tableHeaderRow" class="border-b border-slate-800 text-slate-400 text-xs uppercase">
+            <!-- Generado dinámicamente para resaltar el día actual -->
+          </tr>
+        </thead>
+        <tbody id="habitTableBody" class="divide-y divide-slate-800/60 text-sm">
+          <!-- Renderizado por JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- FILA 3: NUTRICIÓN (CALORÍAS + PROTEÍNA) + PROTOCOLO FACIAL -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Control de Calorías y Proteínas -->
+      <div class="lg:col-span-2 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg space-y-4">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-200">Control de Calorías y Proteínas</h2>
+            <p class="text-xs text-slate-400">Déficit calórico + alta proteína para perder grasa y definir facciones</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5">
+              <label class="text-xs text-slate-400">Meta kcal:</label>
+              <input id="calorieGoalInput" type="number" value="2000" onchange="updateNutritionUI()" class="bg-slate-800 text-emerald-400 font-bold text-xs w-20 px-2 py-1.5 rounded-lg border border-slate-700 text-center">
+            </div>
+            <div class="flex items-center gap-1.5">
+              <label class="text-xs text-slate-400">Proteína (g):</label>
+              <input id="proteinGoalInput" type="number" value="140" onchange="updateNutritionUI()" class="bg-slate-800 text-cyan-400 font-bold text-xs w-16 px-2 py-1.5 rounded-lg border border-slate-700 text-center">
+            </div>
+          </div>
+        </div>
+
+        <!-- Barras de Progreso: Calorías y Proteínas -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-800/40 p-3.5 rounded-xl border border-slate-800">
+          <!-- Calorías -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <span id="calConsumedText" class="text-slate-300 font-medium">Consumidas: 0 kcal</span>
+              <span id="calRemainingText" class="text-emerald-400 font-bold">Restantes: 2000 kcal</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+              <div id="calorieBar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+          <!-- Proteínas -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <span id="protConsumedText" class="text-slate-300 font-medium">Proteína: 0 g</span>
+              <span id="protRemainingText" class="text-cyan-400 font-bold">Meta: 140 g</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+              <div id="proteinBar" class="bg-cyan-400 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones Rápidos de Comidas Frecuentes -->
+        <div class="space-y-1.5">
+          <span class="text-xs text-slate-400 font-medium block">⚡ Agregar rápido con 1 clic:</span>
+          <div class="flex flex-wrap gap-1.5" id="quickFoodsContainer">
+            <!-- Renderizado por JS -->
+          </div>
+        </div>
+
+        <!-- Formulario Manual -->
+        <div class="flex flex-col sm:flex-row gap-2 pt-1">
+          <input id="foodName" type="text" placeholder="Alimento personalizado..." class="flex-1 bg-slate-800 text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-400">
+          <input id="foodCalories" type="number" placeholder="kcal" class="sm:w-24 bg-slate-800 text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-400">
+          <input id="foodProtein" type="number" placeholder="Prot (g)" class="sm:w-24 bg-slate-800 text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-cyan-400">
+          <button onclick="addFoodManual()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2 rounded-xl text-xs sm:text-sm transition">
+            + Agregar
+          </button>
+        </div>
+
+        <!-- Lista de Alimentos del Día y Cierre Automático -->
+        <div class="space-y-3">
+          <ul id="foodList" class="divide-y divide-slate-800/80 max-h-40 overflow-y-auto pr-1 text-xs sm:text-sm"></ul>
+          
+          <div class="flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-slate-800">
+            <button onclick="clearFoods()" class="text-xs text-slate-400 hover:text-rose-400 transition">
+              🗑️ Vaciar comidas de hoy
+            </button>
+            <button onclick="completeCalorieHabitToday()" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition">
+              ✅ Cerrar Día en Déficit (Marcar hoy en tabla)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Protocolo de Definición Facial (Con Auto-Marcado) -->
+      <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg flex flex-col justify-between space-y-4">
+        <div class="space-y-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-200">Protocolo Definición Facial</h2>
+              <p class="text-xs text-slate-400 mt-0.5">Al marcar los 4 puntos se completa automáticamente el hábito de hoy en la tabla.</p>
+            </div>
+            <span id="facialStatusBadge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-400">0/4</span>
+          </div>
+
+          <div class="space-y-2.5 text-xs sm:text-sm pt-1" id="facialChecklist">
+            <label class="flex items-start gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+              <input type="checkbox" onchange="saveFacialState()" class="w-4 h-4 mt-0.5 accent-cyan-400 rounded">
+              <span>💧 <strong>Hidratación (2.5L - 3L):</strong> Elimina la retención de líquidos en mejillas y párpados.</span>
+            </label>
+            <label class="flex items-start gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+              <input type="checkbox" onchange="saveFacialState()" class="w-4 h-4 mt-0.5 accent-cyan-400 rounded">
+              <span>🧂 <strong>Bajo Sodio y Azúcar:</strong> Sin harinas refinadas ni exceso de sal en la noche.</span>
+            </label>
+            <label class="flex items-start gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+              <input type="checkbox" onchange="saveFacialState()" class="w-4 h-4 mt-0.5 accent-cyan-400 rounded">
+              <span>🔥 <strong>Déficit + Proteína:</strong> Mantener las calorías bajo control para oxidar grasa subcutánea.</span>
+            </label>
+            <label class="flex items-start gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+              <input type="checkbox" onchange="saveFacialState()" class="w-4 h-4 mt-0.5 accent-cyan-400 rounded">
+              <span>😴 <strong>Descanso (7-8h) + Postura:</strong> Bajar el cortisol facial y mantener postura lingual en el paladar.</span>
+            </label>
+          </div>
+        </div>
+
+        <button onclick="resetFacialChecks()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-xl text-xs transition">
+          Reiniciar Checklist Facial para Mañana
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE RESPALDO Y SINCRONIZACIÓN -->
+  <div id="backupModal" class="fixed inset-0 bg-black/75 hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center">
+        <h3 class="text-lg font-bold text-slate-100">🔄 Respaldo y Sincronización</h3>
+        <button onclick="closeBackupModal()" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+      <p class="text-xs text-slate-400">
+        Copia este código para pasar tu progreso entre la computadora y tu teléfono, o guárdalo como respaldo seguro.
+      </p>
+      <textarea id="backupCodeArea" rows="4" class="w-full bg-slate-950 text-emerald-400 font-mono text-xs p-3 rounded-xl border border-slate-800 focus:outline-none"></textarea>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="copyBackupCode()" class="bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl text-xs font-semibold transition">
+          📋 Copiar Código
+        </button>
+        <button onclick="importBackupCode()" class="bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-xl text-xs font-semibold transition">
+          📥 Cargar Código Pegado
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+    // Obtener índice del día actual (Lunes = 0 ... Domingo = 6)
+    function getTodayIndex() {
+      const jsDay = new Date().getDay(); // 0 es Domingo, 1 es Lunes...
+      return jsDay === 0 ? 6 : jsDay - 1;
+    }
+
+    const QUICK_FOODS = [
+      { name: 'Arepa asada mediana', cal: 160, prot: 4 },
+      { name: '2 Huevos sancochados/revueltos', cal: 140, prot: 12 },
+      { name: 'Pechuga de pollo (150g)', cal: 245, prot: 45 },
+      { name: 'Carne magra / Bistec (150g)', cal: 250, prot: 40 },
+      { name: 'Atún en agua (1 lata)', cal: 120, prot: 26 },
+      { name: 'Arroz blanco (1 taza)', cal: 200, prot: 4 },
+      { name: 'Caraotas negras (1 taza)', cal: 220, prot: 15 },
+      { name: 'Plátano horneado / Airfryer', cal: 180, prot: 2 },
+      { name: 'Batido de Proteína (1 scoop)', cal: 120, prot: 24 }
+    ];
+
+    const DEFAULT_HABITS = [
+      { id: 'gym', name: '💪 Hacer ejercicio (Fuerza / Cardio)', target: 5, checks: [false, false, false, false, false, false, false] },
+      { id: 'read', name: '📖 Leer (15-20 págs / 25 min)', target: 7, checks: [false, false, false, false, false, false, false] },
+      { id: 'uni', name: '💻 Repasar temas de la Universidad', target: 5, checks: [false, false, false, false, false, false, false] },
+      { id: 'thesis', name: '🎓 Trabajar en la Tesis con Emily', target: 4, checks: [false, false, false, false, false, false, false] },
+      { id: 'sc', name: '🤝 Servicio Comunitario (Trámites / Horas)', target: 3, checks: [false, false, false, false, false, false, false] },
+      { id: 'cal', name: '🥗 Cumplir meta de calorías (Déficit)', target: 7, checks: [false, false, false, false, false, false, false] },
+      { id: 'face', name: '✨ Protocolo definición facial (4 pasos)', target: 7, checks: [false, false, false, false, false, false, false] }
+    ];
+
+    let state = JSON.parse(localStorage.getItem('emirHabitState_v2')) || {
+      habits: DEFAULT_HABITS,
+      historicalStreak: 0,
+      thesisPct: 25,
+      thesisTodos: [
+        { text: 'Revisar avances del capítulo actual con Emily', done: false },
+        { text: 'Validar pruebas del modelo y resultados', done: false }
+      ],
+      scHours: 0,
+      scTodos: [
+        { text: 'Inscribir proyecto y definir tutor de Servicio Comunitario', done: false },
+        { text: 'Planificar horario semanal para cubrir las 120h', done: false }
+      ],
+      calorieGoal: 2000,
+      proteinGoal: 140,
+      foods: [],
+      facialChecks: [false, false, false, false]
+    };
+
+    let chartInstance = null;
+
+    function saveState() {
+      state.calorieGoal = parseInt(document.getElementById('calorieGoalInput').value) || 2000;
+      state.proteinGoal = parseInt(document.getElementById('proteinGoalInput').value) || 140;
+      localStorage.setItem('emirHabitState_v2', JSON.stringify(state));
+    }
+
+    function renderQuickFoods() {
+      const container = document.getElementById('quickFoodsContainer');
+      container.innerHTML = '';
+      QUICK_FOODS.forEach((f, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1 rounded-lg text-xs transition';
+        btn.innerText = `+ ${f.name} (${f.cal}kcal | ${f.prot}g P)`;
+        btn.onclick = () => {
+          state.foods.push({ name: f.name, cal: f.cal, prot: f.prot });
+          saveState();
+          updateNutritionUI();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderHabitTable() {
+      const todayIdx = getTodayIndex();
+      document.getElementById('todayBadge').innerText = `Hoy: ${DAYS[todayIdx]}`;
+
+      // Cabecera con resaltado del día actual
+      const headerRow = document.getElementById('tableHeaderRow');
+      let headerHtml = `<th class="py-3 px-4">Hábito / Meta Semanal</th>`;
+      DAYS.forEach((day, dIdx) => {
+        const isToday = dIdx === todayIdx;
+        headerHtml += `
+          <th class="py-3 px-2 text-center ${isToday ? 'text-emerald-400 font-bold bg-emerald-950/30 rounded-t-lg' : ''}">
+            ${day} ${isToday ? '•' : ''}
+          </th>`;
+      });
+      headerHtml += `<th class="py-3 px-4 text-right">Progreso</th>`;
+      headerRow.innerHTML = headerHtml;
+
+      // Filas
+      const tbody = document.getElementById('habitTableBody');
+      tbody.innerHTML = '';
+
+      state.habits.forEach((habit, hIndex) => {
+        const doneCount = habit.checks.filter(Boolean).length;
+        const pct = Math.min(100, Math.round((doneCount / habit.target) * 100));
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 transition';
+
+        let daysHtml = '';
+        habit.checks.forEach((checked, dIndex) => {
+          const isToday = dIndex === todayIdx;
+          daysHtml += `
+            <td class="py-3 px-2 text-center ${isToday ? 'bg-emerald-950/20' : ''}">
+              <input type="checkbox" ${checked ? 'checked' : ''} 
+                onchange="toggleHabit(${hIndex}, ${dIndex})"
+                class="w-5 h-5 accent-emerald-400 rounded cursor-pointer">
+            </td>`;
+        });
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-medium text-slate-200">${habit.name}</td>
+          ${daysHtml}
+          <td class="py-3 px-4 text-right">
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${doneCount >= habit.target ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-slate-800 text-slate-300'}">
+              ${doneCount}/${habit.target} (${pct}%)
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      updateChartAndStreak();
+    }
+
+    function toggleHabit(hIndex, dIndex) {
+      state.habits[hIndex].checks[dIndex] = !state.habits[hIndex].checks[dIndex];
+      saveState();
+      renderHabitTable();
+    }
+
+    function autoCheckHabitToday(habitId, value = true) {
+      const todayIdx = getTodayIndex();
+      const habit = state.habits.find(h => h.id === habitId);
+      if (habit) {
+        habit.checks[todayIdx] = value;
+        saveState();
+        renderHabitTable();
+      }
+    }
+
+    function updateChartAndStreak() {
+      const dailyTotals = DAYS.map((_, dIndex) => {
+        const completed = state.habits.reduce((acc, h) => acc + (h.checks[dIndex] ? 1 : 0), 0);
+        return Math.round((completed / state.habits.length) * 100);
+      });
+
+      const avg = Math.round(dailyTotals.reduce((a, b) => a + b, 0) / 7);
+      document.getElementById('weeklyAvg').innerText = `Promedio: ${avg}%`;
+
+      let weeklyActiveDays = 0;
+      dailyTotals.forEach(pct => {
+        if (pct >= 50) weeklyActiveDays++;
+      });
+
+      document.getElementById('weeklyStreakCount').innerText = `${weeklyActiveDays} días 🔥`;
+      document.getElementById('historicalStreakCount').innerText = `${(state.historicalStreak || 0) + weeklyActiveDays} días 🏆`;
+
+      if (chartInstance) {
+        chartInstance.data.datasets[0].data = dailyTotals;
+        chartInstance.update();
+      } else {
+        const ctx = document.getElementById('streakChart').getContext('2d');
+        chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: DAYS,
+            datasets: [{
+              label: '% de Hábitos Cumplidos',
+              data: dailyTotals,
+              backgroundColor: 'rgba(52, 211, 153, 0.75)',
+              borderColor: 'rgb(52, 211, 153)',
+              borderWidth: 1,
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                ticks: { color: '#94a3b8', callback: val => val + '%' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: '#94a3b8' }
+              }
+            },
+            plugins: { legend: { display: false } }
+          }
+        });
+      }
+    }
+
+    // PROYECTOS: TESIS Y SERVICIO COMUNITARIO
+    function updateThesis(delta) {
+      state.thesisPct = Math.max(0, Math.min(100, state.thesisPct + delta));
+      document.getElementById('thesisPctText').innerText = `${state.thesisPct}%`;
+      document.getElementById('thesisBar').style.width = `${state.thesisPct}%`;
+      saveState();
+    }
+
+    function updateSC(delta) {
+      state.scHours = Math.max(0, Math.min(120, state.scHours + delta));
+      const pct = Math.round((state.scHours / 120) * 100);
+      document.getElementById('scHoursText').innerText = `${state.scHours} / 120 hrs`;
+      document.getElementById('scBar').style.width = `${pct}%`;
+      const statusEl = document.getElementById('scStatus');
+      if (state.scHours === 0) {
+        statusEl.innerText = 'Pendiente por iniciar';
+        statusEl.className = 'text-[11px] text-amber-300';
+      } else if (state.scHours < 120) {
+        statusEl.innerText = `En curso (${120 - state.scHours}h restantes)`;
+        statusEl.className = 'text-[11px] text-purple-300';
+      } else {
+        statusEl.innerText = '¡120 Horas Completadas! ✅';
+        statusEl.className = 'text-[11px] text-emerald-400 font-bold';
+      }
+      saveState();
+    }
+
+    function renderProjectTodos() {
+      ['thesis', 'sc'].forEach(type => {
+        const listEl = document.getElementById(type === 'thesis' ? 'thesisTodoList' : 'scTodoList');
+        const todos = type === 'thesis' ? state.thesisTodos : state.scTodos;
+        listEl.innerHTML = '';
+
+        todos.forEach((todo, idx) => {
+          const li = document.createElement('li');
+          li.className = 'flex justify-between items-center bg-slate-900/70 px-2.5 py-1.5 rounded-lg border border-slate-800';
+          li.innerHTML = `
+            <label class="flex items-center gap-2 cursor-pointer flex-1 truncate">
+              <input type="checkbox" ${todo.done ? 'checked' : ''} onchange="toggleProjectTodo('${type}', ${idx})" class="accent-emerald-400 rounded">
+              <span class="${todo.done ? 'line-through text-slate-500' : 'text-slate-200'} truncate">${todo.text}</span>
+            </label>
+            <button onclick="deleteProjectTodo('${type}', ${idx})" class="text-slate-500 hover:text-rose-400 ml-2">✕</button>
+          `;
+          listEl.appendChild(li);
+        });
+      });
+    }
+
+    function addProjectTodo(type) {
+      const input = document.getElementById(type === 'thesis' ? 'thesisTodoInput' : 'scTodoInput');
+      const text = input.value.trim();
+      if (!text) return;
+      if (type === 'thesis') state.thesisTodos.push({ text, done: false });
+      else state.scTodos.push({ text, done: false });
+      input.value = '';
+      saveState();
+      renderProjectTodos();
+    }
+
+    function toggleProjectTodo(type, idx) {
+      const arr = type === 'thesis' ? state.thesisTodos : state.scTodos;
+      arr[idx].done = !arr[idx].done;
+      if (arr[idx].done) {
+        autoCheckHabitToday(type === 'thesis' ? 'thesis' : 'sc', true);
+      }
+      saveState();
+      renderProjectTodos();
+    }
+
+    function deleteProjectTodo(type, idx) {
+      const arr = type === 'thesis' ? state.thesisTodos : state.scTodos;
+      arr.splice(idx, 1);
+      saveState();
+      renderProjectTodos();
+    }
+
+    // NUTRICIÓN: CALORÍAS Y PROTEÍNAS
+    function addFoodManual() {
+      const nameEl = document.getElementById('foodName');
+      const calEl = document.getElementById('foodCalories');
+      const protEl = document.getElementById('foodProtein');
+      const name = nameEl.value.trim();
+      const cal = parseInt(calEl.value);
+      const prot = parseInt(protEl.value) || 0;
+      if (!name || isNaN(cal) || cal <= 0) return;
+
+      state.foods.push({ name, cal, prot });
+      nameEl.value = '';
+      calEl.value = '';
+      protEl.value = '';
+      saveState();
+      updateNutritionUI();
+    }
+
+    function removeFood(idx) {
+      state.foods.splice(idx, 1);
+      saveState();
+      updateNutritionUI();
+    }
+
+    function clearFoods() {
+      state.foods = [];
+      saveState();
+      updateNutritionUI();
+    }
+
+    function completeCalorieHabitToday() {
+      const goal = parseInt(document.getElementById('calorieGoalInput').value) || 2000;
+      const consumed = state.foods.reduce((sum, item) => sum + item.cal, 0);
+      if (consumed > goal) {
+        if (!confirm('Hoy superaste la meta de calorías. ¿Seguro que deseas marcar el día como cumplido?')) return;
+      }
+      autoCheckHabitToday('cal', true);
+    }
+
+    function updateNutritionUI() {
+      const calGoal = parseInt(document.getElementById('calorieGoalInput').value) || 2000;
+      const protGoal = parseInt(document.getElementById('proteinGoalInput').value) || 140;
+
+      const calConsumed = state.foods.reduce((sum, item) => sum + item.cal, 0);
+      const protConsumed = state.foods.reduce((sum, item) => sum + (item.prot || 0), 0);
+
+      const calRem = calGoal - calConsumed;
+      const calPct = Math.min(100, Math.round((calConsumed / calGoal) * 100));
+      const protPct = Math.min(100, Math.round((protConsumed / protGoal) * 100));
+
+      document.getElementById('calConsumedText').innerText = `Consumidas: ${calConsumed} kcal`;
+      const calRemEl = document.getElementById('calRemainingText');
+      const calBarEl = document.getElementById('calorieBar');
+
+      if (calRem >= 0) {
+        calRemEl.innerText = `Restantes: ${calRem} kcal`;
+        calRemEl.className = 'text-emerald-400 font-bold';
+        calBarEl.className = 'bg-emerald-500 h-full transition-all duration-300';
+      } else {
+        calRemEl.innerText = `Exceso: +${Math.abs(calRem)} kcal`;
+        calRemEl.className = 'text-rose-400 font-bold';
+        calBarEl.className = 'bg-rose-500 h-full transition-all duration-300';
+      }
+      calBarEl.style.width = `${calPct}%`;
+
+      document.getElementById('protConsumedText').innerText = `Proteína: ${protConsumed} g`;
+      document.getElementById('protRemainingText').innerText = protConsumed >= protGoal ? `¡Meta lograda! (${protGoal}g) 💪` : `Faltan: ${protGoal - protConsumed} g`;
+      document.getElementById('proteinBar').style.width = `${protPct}%`;
+
+      const listEl = document.getElementById('foodList');
+      listEl.innerHTML = '';
+      state.foods.forEach((item, idx) => {
+        const li = document.createElement('li');
+        li.className = 'py-2 flex justify-between items-center text-slate-300';
+        li.innerHTML = `
+          <span>${item.name}</span>
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-semibold text-cyan-400">${item.prot || 0}g P</span>
+            <span class="text-xs font-semibold text-emerald-400">${item.cal} kcal</span>
+            <button onclick="removeFood(${idx})" class="text-slate-500 hover:text-rose-400 text-xs">✕</button>
+          </div>
+        `;
+        listEl.appendChild(li);
+      });
+      saveState();
+    }
+
+    // PROTOCOLO FACIAL CON AUTO-MARCADO
+    function saveFacialState() {
+      const checks = document.querySelectorAll('#facialChecklist input[type="checkbox"]');
+      state.facialChecks = Array.from(checks).map(c => c.checked);
+      const doneCount = state.facialChecks.filter(Boolean).length;
+
+      const badge = document.getElementById('facialStatusBadge');
+      badge.innerText = `${doneCount}/4`;
+      badge.className = doneCount === 4
+        ? 'text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+        : 'text-xs font-bold px-2.5 py-1 rounded-full bg-slate-800 text-slate-400';
+
+      // Si completó los 4 pasos, marca automáticamente hoy en la tabla semanal
+      if (doneCount === 4) {
+        autoCheckHabitToday('face', true);
+      }
+      saveState();
+    }
+
+    function resetFacialChecks() {
+      state.facialChecks = [false, false, false, false];
+      const checks = document.querySelectorAll('#facialChecklist input[type="checkbox"]');
+      checks.forEach(c => c.checked = false);
+      saveFacialState();
+    }
+
+    // CIERRE DE SEMANA CON RACHA HISTÓRICA
+    function closeAndResetWeek() {
+      const dailyTotals = DAYS.map((_, dIndex) => {
+        const completed = state.habits.reduce((acc, h) => acc + (h.checks[dIndex] ? 1 : 0), 0);
+        return Math.round((completed / state.habits.length) * 100);
+      });
+      let weeklyActiveDays = 0;
+      dailyTotals.forEach(pct => { if (pct >= 50) weeklyActiveDays++; });
+
+      if (!confirm(`¿Cerrar la semana actual? Se sumarán ${weeklyActiveDays} días cumplidos a tu Racha Histórica permanente y se limpiarán las casillas para empezar el lunes.`)) return;
+
+      state.historicalStreak = (state.historicalStreak || 0) + weeklyActiveDays;
+      state.habits.forEach(h => h.checks = [false, false, false, false, false, false, false]);
+      saveState();
+      renderHabitTable();
+    }
+
+    // RESPALDO Y SINCRONIZACIÓN
+    function openBackupModal() {
+      saveState();
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+      document.getElementById('backupCodeArea').value = encoded;
+      const modal = document.getElementById('backupModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeBackupModal() {
+      const modal = document.getElementById('backupModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function copyBackupCode() {
+      const area = document.getElementById('backupCodeArea');
+      area.select();
+      navigator.clipboard.writeText(area.value);
+      alert('¡Código de respaldo copiado al portapapeles!');
+    }
+
+    function importBackupCode() {
+      const raw = document.getElementById('backupCodeArea').value.trim();
+      if (!raw) return;
+      try {
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(raw))));
+        if (decoded && decoded.habits) {
+          state = decoded;
+          localStorage.setItem('emirHabitState_v2', JSON.stringify(state));
+          location.reload();
+        }
+      } catch (e) {
+        alert('El código ingresado no es válido.');
+      }
+    }
+
+    // INICIALIZAR
+    window.onload = () => {
+      document.getElementById('calorieGoalInput').value = state.calorieGoal || 2000;
+      document.getElementById('proteinGoalInput').value = state.proteinGoal || 140;
+      renderQuickFoods();
+      updateThesis(0);
+      updateSC(0);
+      renderProjectTodos();
+      updateNutritionUI();
+
+      const checks = document.querySelectorAll('#facialChecklist input[type="checkbox"]');
+      checks.forEach((c, idx) => c.checked = !!(state.facialChecks && state.facialChecks[idx]));
+      saveFacialState();
+      renderHabitTable();
+    };
+  </script>
+</body>
+</html>
